@@ -45,17 +45,14 @@ const urlShortner = async function (req, res) {
 
 const urlRedirect = async function (req, res) {
     try {
-        let urlCode = req.params.urlCode
-
-        let longUrl = await urlModel.findOne({ urlCode: urlCode }).select({ _id: 0, longUrl: 1 })
-        if (!longUrl) {
-            return res.status(404).send({ status: false, message: "Url Code is not correct" })
-        }
-        res.status(303).redirect(longUrl)
+        let urlcode = req.params.urlCode
+        
+        let findUrl = await urlModel.find({ urlCode: urlcode }).select({longUrl:1 , _id:0})
+        if (!findUrl) return res.status(400).send({ status: false, message: "Url Code is not correct" })
+        return res.status(302).redirect(findUrl[0]['longUrl'])
     } catch (error) {
         res.status(500).send({ status: false, message: error.message });
     }
 }
-
 
 module.exports = { urlShortner, urlRedirect };
