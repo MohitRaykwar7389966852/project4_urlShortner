@@ -15,26 +15,24 @@ const urlShortner = async function (req, res) {
         const longUrl = requestBody.longUrl;
         const baseUrl = "http://localhost:3000"
 
-        if (!validUrl.isUri(baseUrl)) {
-            return res.status(400).send({ status: false, message: 'Invalid baseUrl' })
-        }
         if (!validUrl.isUri(longUrl)) {
             return res.status(400).send({ status: false, message: 'Invalid longUrl' })
         }
+        
         //Before creating the short URL,we check if the long URL was in the DB ,else we create it.
 
-        const checkUrl = await urlModel.findOne({ longUrl }).select({ shortid: 1, longUrl: 1, urlcode: 1, _id: 0 });
+        const urlAlreadyInDb = await urlModel.findOne({ longUrl }).select({ shortUrl: 1, longUrl: 1, urlCode: 1, _id: 0 });
 
-        if(checkUrl){
-            return res.status(200).send({ status: true, message: 'Url Shorten Successfully', data:checkUrl })  
+        if(urlAlreadyInDb){
+            return res.status(200).send({ status: true, message: 'Url Shorten Successfully', data:urlAlreadyInDb })  
         }else{
             const urlCode = shortid.generate().toLowerCase();
             const shortUrl = baseUrl + '/' + urlCode;
 
             const newUrl = {
-                urlCode: urlCode,
                 longUrl: longUrl.trim(),
-                shortUrl: shortUrl
+                shortUrl: shortUrl,
+                urlCode: urlCode
             }
 
             const urlCreated = await urlModel.create(newUrl);

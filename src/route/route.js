@@ -5,8 +5,7 @@ const {urlShortner } = require("../controller/urlController")
 
 
 router.post("/url/shorten",urlShortner)
-// router.get("/functionup/colleges", collegeController.createCollege)
-// router.get("/functionup/collegeDetails",collegeController.collegeDetails)
+// router.get()
 
 
 module.exports = router;
