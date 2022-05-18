@@ -2,6 +2,28 @@ const validUrl = require('valid-url')
 const shortid = require('shortid')
 const urlModel = require("../model/urlModel")
 
+const redis = require("redis");
+const { promisify } = require("util");
+
+//Connect to redis
+const redisClient = redis.createClient(
+    19631,
+    "redis-19631.c264.ap-south-1-1.ec2.cloud.redislabs.com",
+    { no_ready_check: true }
+  );
+  redisClient.auth("WGqnMu6b0QSWECZAEY3B8EFshoc6MSJI", function (err) {
+    if (err) throw err;
+  });
+  
+  redisClient.on("connect", async function () {
+    console.log("Connected to Redis..");
+  });
+
+  //Connection setup for redis
+
+const SET_ASYNC = promisify(redisClient.SET).bind(redisClient);
+const GET_ASYNC = promisify(redisClient.GET).bind(redisClient);
+
 const { isValidRequestBody } = require("../util/validator");
 
 const urlShortner = async function (req, res) {
@@ -45,11 +67,18 @@ const urlShortner = async function (req, res) {
 
 const urlRedirect = async function (req, res) {
     try {
-        let urlcode = req.params.urlCode
-        
-        let findUrl = await urlModel.find({ urlCode: urlcode }).select({longUrl:1 , _id:0})
-        if (!findUrl) return res.status(400).send({ status: false, message: "Url Code is not correct" })
-        return res.status(302).redirect(findUrl[0]['longUrl'])
+        let urlCode = req.params.urlCode
+
+        let cahcedUrlCode = await GET_ASYNC(urlCode)
+        if(cahcedUrlCode) {
+            return res.status(302).redirect(cahcedUrlCode)
+        } else {
+            let findUrl = await urlModel.findOne({ urlCode: urlCode })
+            if (!findUrl) return res.status(404).send({ status: false, message: "Url Code is not correct" })
+
+          await SET_ASYNC(urlCode,findUrl.longUrl)
+          return res.status(302).redirect(findUrl.longUrl)
+        }        
     } catch (error) {
         res.status(500).send({ status: false, message: error.message });
     }
