@@ -18,14 +18,14 @@ const urlShortner = async function (req, res) {
         if (!validUrl.isUri(longUrl)) {
             return res.status(400).send({ status: false, message: 'Invalid longUrl' })
         }
-        
+
         //Before creating the short URL,we check if the long URL was in the DB ,else we create it.
 
         const urlAlreadyInDb = await urlModel.findOne({ longUrl }).select({ shortUrl: 1, longUrl: 1, urlCode: 1, _id: 0 });
 
-        if(urlAlreadyInDb){
-            return res.status(200).send({ status: true, message: 'Url Shorten Successfully', data:urlAlreadyInDb })  
-        }else{
+        if (urlAlreadyInDb) {
+            return res.status(200).send({ status: true, message: 'Url Shorten Successfully', data: urlAlreadyInDb })
+        } else {
             const urlCode = shortid.generate().toLowerCase();
             const shortUrl = baseUrl + '/' + urlCode;
 
@@ -43,12 +43,15 @@ const urlShortner = async function (req, res) {
     }
 }
 
-const urlRedirect = function (req, res) {
+const urlRedirect = async function (req, res) {
     try {
         let urlCode = req.params.urlCode
-        let longUrl = await urlModel.find({ urlCode: urlCode }).select({ _id: 0, longUrl: 1 })
-        if (!longUrl) return res.status(400).send({ status: false, message: "Url Code is not correct" })
-        res.status(302).redirect(longUrl)
+
+        let longUrl = await urlModel.findOne({ urlCode: urlCode }).select({ _id: 0, longUrl: 1 })
+        if (!longUrl) {
+            return res.status(404).send({ status: false, message: "Url Code is not correct" })
+        }
+        res.status(303).redirect(longUrl)
     } catch (error) {
         res.status(500).send({ status: false, message: error.message });
     }
