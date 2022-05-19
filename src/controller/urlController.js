@@ -33,10 +33,7 @@ const urlShortner = async function (req, res) {
         if (Object.keys(requestBody).length === 0) {
             return res.status(400).send({ status: false, message: "No data provided" });
         }
-        if (Object.keys(requestBody).length > 1) {
-            return res.status(400).send({ status: false, message: "Please Enter the longUrl Only" });
-        }
-
+        
         const longUrl = requestBody.longUrl;
         const baseUrl = "http://localhost:3000";
         const urlCode = shortid.generate().toLowerCase();
@@ -45,7 +42,13 @@ const urlShortner = async function (req, res) {
         if (!longUrl) {
             return res.status(400).send({ status: false, message: 'Please Enter the longUrl' })
         }
-        if (!validUrl.isUri(longUrl)) {
+
+        if (Object.keys(requestBody).length > 1) {
+            return res.status(400).send({ status: false, message: "Please Enter the longUrl Only" });
+        }
+
+        //if(!/(ftp|http|https|HTTP|HTTPS):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/.test(longUrl))
+        if (!validUrl.isUri(longUrl)){
             return res.status(400).send({ status: false, message: 'Invalid longUrl' })
         }
 
@@ -58,7 +61,7 @@ const urlShortner = async function (req, res) {
 
         // Before creating the short URL,we check if the long URL was in the DB ,else we create it.
 
-        const urlAlreadyInDb = await urlModel.findOne({ longUrl }).select({ shortUrl: 1, longUrl: 1, urlCode: 1, _id: 0 });
+        const urlAlreadyInDb = await urlModel.findOne({ longUrl }).select({ longUrl: 1,shortUrl: 1, urlCode: 1, _id: 0 });
         if (urlAlreadyInDb) {
 
             await SET_ASYNC(`${longUrl}`, JSON.stringify(urlAlreadyInDb), "EX",90);
@@ -72,13 +75,18 @@ const urlShortner = async function (req, res) {
                 shortUrl: shortUrl,
                 urlCode: urlCode
             }
-
             const urlCreated = await urlModel.create(newUrl);
+
+            const resUrl ={
+                longUrl: urlCreated.longUrl,
+                shortUrl: urlCreated.shortUrl,
+                urlCode: urlCreated.urlCode
+            }
 
             await SET_ASYNC(`${longUrl}`, JSON.stringify(newUrl), "EX",90);
             await SET_ASYNC(`${urlCode}`, JSON.stringify(newUrl.longUrl), "EX",90);
 
-            return res.status(201).send({ status: true, message: 'Url Shorten Successfully', data: urlCreated })
+            return res.status(201).send({ status: true, message: 'Url Shorten Successfully', data: resUrl })
         }
     } catch (error) {
         res.status(500).send({ status: false, message: error.message });
