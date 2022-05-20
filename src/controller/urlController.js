@@ -77,7 +77,7 @@ const urlShortner = async function (req, res) {
             }
             const urlCreated = await urlModel.create(newUrl);
 
-            const resUrl ={
+            const resUrl = {
                 longUrl: urlCreated.longUrl,
                 shortUrl: urlCreated.shortUrl,
                 urlCode: urlCreated.urlCode
