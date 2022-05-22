@@ -33,30 +33,34 @@ const urlShortner = async function (req, res) {
         if (Object.keys(requestBody).length === 0) {
             return res.status(400).send({ status: false, message: "No data provided" });
         }
-        
-        const longUrl = requestBody.longUrl;
-        const baseUrl = "http://localhost:3000";
-        const urlCode = shortid.generate().toLowerCase();
-        const shortUrl = baseUrl + '/' + urlCode;
 
-        if (!longUrl) {
-            return res.status(400).send({ status: false, message: 'Please Enter the longUrl' })
+        if (!requestBody.hasOwnProperty('longUrl')) {
+            return res.status(400).send({ status: false, message: "Please Enter the longUrl" });
         }
-
+        
         if (Object.keys(requestBody).length > 1) {
             return res.status(400).send({ status: false, message: "Please Enter the longUrl Only" });
         }
+        
+        const longUrl = requestBody.longUrl;
 
-        //if(!/(ftp|http|https|HTTP|HTTPS):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/.test(longUrl))
-        if (!validUrl.isUri(longUrl)){
+        if (!longUrl) {
+            return res.status(400).send({ status: false, message: 'longUrl Is Empty' })
+        }   
+
+        if(!/^(https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|www\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9]+\.[^\s]{2,}|www\.[a-zA-Z0-9]+\.[^\s]{2,})?$/.test(longUrl)){
             return res.status(400).send({ status: false, message: 'Invalid longUrl' })
         }
+
+        const baseUrl = "http://localhost:3000";
+        const urlCode = shortid.generate().toLowerCase();
+        const shortUrl = baseUrl + '/' + urlCode;
 
          // Before creating the short URL,we check if the long URL was in the Cache ,else we will check in the DB.
 
         let urlAlreadyInCache = await GET_ASYNC(`${longUrl}`)
         if (urlAlreadyInCache) {
-            return res.status(200).send({status: true, message: 'Url Already In Cache',data: JSON.parse(urlAlreadyInCache)})
+            return res.status(200).send({status: true, message: 'Url Already Exist',data: JSON.parse(urlAlreadyInCache)})
         }
 
         // Before creating the short URL,we check if the long URL was in the DB ,else we create it.
